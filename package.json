@@ -1,6 +1,6 @@
 {
   "name": "003pearclipboard",
-  "main": "index.html",
+  "main": "account.html",
   "pear": {
     "name": "003pearclipboard",
     "type": "desktop",
@@ -25,6 +25,7 @@
     "bcryptjs": "^2.4.3",
     "hypercore": "^10.38.1",
     "hypercore-crypto": "^3.4.2",
-    "hyperswarm": "^4.8.4"
+    "hyperswarm": "^4.8.4",
+    "lockfile": "^1.0.4"
   }
 }

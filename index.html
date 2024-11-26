@@ -3,65 +3,15 @@
   <head>
     <link rel="stylesheet" href="./style.css" />
     <script type="module" src="./app.js"></script>
+    <script type="module" src="./clip.js"></script>
   </head>
   <body>
     <div id="bar"><pear-ctrl></pear-ctrl></div>
-    <div id="account--form">
-      <form id="signup--form" class="">
-        <input
-          type="text"
-          name="username"
-          id="signup--username"
-          placeholder="Enter the username" />
-        <input
-          type="password"
-          name="password"
-          id="signup--password"
-          placeholder="Enter the password" />
-        <input
-          type="password"
-          name="confirmPassword"
-          id="signup--confirmPassword"
-          placeholder="Enter the confirmPassword" />
-        <button type="button" id="signUpBtn">Sign Up</button>
-        <span>
-          <p>Already have an Account?</p>
-          <button type="button" id="login--change--btn">Log In</button>
-        </span>
-      </form>
-      <form id="login--form" class="hidden">
-        <input
-          type="text"
-          name="username"
-          id="login--username"
-          placeholder="Enter the username" />
-        <input
-          type="password"
-          name="password"
-          id="login--password"
-          placeholder="Enter the password" />
-        <button type="button" id="loginBtn">Log In</button>
-        <span>
-          <p>Does not have an Account?</p>
-          <button type="button" id="signup--change--btn">Sign Up</button>
-        </span>
-      </form>
-    </div>
-    <script>
-      document
-        .querySelector("#login--change--btn")
-        .addEventListener("click", (e) => {
-          e.preventDefault();
-          document.querySelector("#signup--form").classList.toggle("hidden");
-          document.querySelector("#login--form").classList.toggle("hidden");
-        });
-      document
-        .querySelector("#signup--change--btn")
-        .addEventListener("click", (e) => {
-          e.preventDefault();
-          document.querySelector("#signup--form").classList.toggle("hidden");
-          document.querySelector("#login--form").classList.toggle("hidden");
-        });
-    </script>
+    <button type="button" id="logoutBtn" onclick="logout()">Logout</button>
   </body>
+  <script>
+    function logout() {
+      window.location.href = "account.html";
+    }
+  </script>
 </html>

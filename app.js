@@ -1,36 +1,42 @@
-// For interactive documentation and code auto-completion in editor
-/** @typedef {import('pear-interface')} */
-
-/* global Pear */
-import Hyperswarm from "hyperswarm"; // Module for P2P networking and connecting peers
-import crypto from "hypercore-crypto"; // Cryptographic functions for generating the key in app
-import b4a from "b4a"; // Module for buffer-to-string and vice-versa conversions
+import Hyperswarm from "hyperswarm";
+import crypto from "hypercore-crypto";
+import b4a from "b4a";
 import Hypercore from "hypercore";
-
 import bcrypt from "bcryptjs";
 
-const { teardown } = Pear; // Functions for cleanup and updates
-
 const swarm = new Hyperswarm();
-
 const userCore = new Hypercore("./user-core", { valueEncoding: "json" });
 
-teardown(() => {
+// Clean up resources before the app shuts down
+function cleanup() {
   userCore.close((err) => {
-    if (err) console.error("Error closing Hypercore:", err);
+    if (err) {
+      console.error("Error closing Hypercore:", err);
+    } else {
+      console.log("Hypercore closed successfully.");
+    }
   });
-  swarm.destroy();
+
+  swarm.destroy((err) => {
+    if (err) {
+      console.error("Error destroying swarm:", err);
+    } else {
+      console.log("Hyperswarm destroyed successfully.");
+    }
+  });
+}
+
+// Optionally, listen for window unload events to trigger cleanup
+window.addEventListener("beforeunload", cleanup);
+
+// Event Listeners for Sign Up and Login
+document.addEventListener("DOMContentLoaded", () => {
+  document
+    .querySelector("#signUpBtn")
+    .addEventListener("click", signUpUsername);
+  document.querySelector("#loginBtn").addEventListener("click", loginUsername);
+  document.querySelector("#logoutBtn").addEventListener("click", logout);
 });
-
-document
-  .querySelector("#signup--form")
-  .addEventListener("submit", signUpUsername);
-document.querySelector("#signUpBtn").addEventListener("click", signUpUsername);
-
-document
-  .querySelector("#login--form")
-  .addEventListener("submit", loginUsername);
-document.querySelector("#loginBtn").addEventListener("click", loginUsername);
 
 async function signUpUsername() {
   const username = document.getElementById("signup--username").value;
@@ -40,28 +46,45 @@ async function signUpUsername() {
   ).value;
 
   if (password !== confirmPassword) {
-    console.log("Passwords do not match");
+    notification("red", "Passwords do not match");
     return;
   }
 
   const keyPair = crypto.keyPair();
   const publicKey = keyPair.publicKey.toString("hex");
-
   const hashedPass = bcrypt.hashSync(password, 10);
 
   const userDoc = {
     type: "user",
-    username: username,
-    publicKey: publicKey,
+    username,
+    publicKey,
     password: hashedPass,
     timeStamp: Date.now(),
   };
-
   console.log(userDoc);
+  window.location.href = "index.html";
 
+  // Save current user information to localStorage
+  localStorage.setItem("currentUser", publicKey);
+  localStorage.setItem("isLoggedIn", "true");
+
+  // Append data to userCore
   userCore.append(userDoc, (err) => {
-    if (err) console.error("Failed to save user:", err);
-    else console.log("User signed up successfully:", userDoc);
+    if (err) {
+      console.error("Failed to save user:", err);
+      notification("red", "User creation failed due to file lock");
+    } else {
+      console.log("User signed up successfully:", userDoc);
+    }
+
+    // Close userCore after appending data
+    userCore.close((err) => {
+      if (err) {
+        console.error("Error closing Hypercore:", err);
+      } else {
+        console.log("Hypercore closed successfully after signup.");
+      }
+    });
   });
 }
 
@@ -74,13 +97,54 @@ async function loginUsername() {
     .on("data", (data) => {
       if (data.username === username) {
         if (bcrypt.compareSync(password, data.password)) {
-          console.log("Login Successfully");
+          notification("green", "Login Successfully!!!");
+          localStorage.setItem("currentUser", data.publicKey);
+          localStorage.setItem("isLoggedIn", "true");
+          window.location.href = "index.html";
         } else {
-          console.log("Incorrect Pass");
+          notification("red", "Incorrect Password");
         }
       }
     })
     .on("end", () => {
-      console.log("User not found!!!");
+      notification("red", "User not found!!!");
     });
+}
+
+// Show User Data After Login in index.html
+if (window.location.pathname.includes("index.html")) {
+  const currentUserKey = localStorage.getItem("currentUser");
+  if (!currentUserKey) {
+    alert("User not logged in. Redirecting to login.");
+    window.location.href = "account.html";
+  }
+
+  userCore.createReadStream().on("data", (data) => {
+    if (data.publicKey === currentUserKey) {
+      document.body.innerHTML += `
+        <div class="user-info">
+          <h1>Welcome, ${data.username}!</h1>
+          <p>Your public key: ${data.publicKey}</p>
+        </div>
+      `;
+    }
+  });
+}
+
+// Utility Functions
+function notification(color, message) {
+  const notification = document.createElement("div");
+  notification.className = `notification ${color}`;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+function logout() {
+  localStorage.removeItem("currentUser");
+  localStorage.setItem("isLoggedIn", "false");
+  window.location.href = "account.html";
 }
