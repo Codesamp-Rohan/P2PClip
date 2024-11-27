@@ -7,7 +7,27 @@
   </head>
   <body>
     <div id="bar"><pear-ctrl></pear-ctrl></div>
-    <button type="button" id="logoutBtn" onclick="logout()">Logout</button>
+    <div class="loading hidden">Loading...</div>
+    <div class="top--div">
+      <button type="button" id="logoutBtn" onclick="logout()">Logout</button>
+    </div>
+    <div class="middle--div">
+      <div class="roomBox">
+        <form id="roomJoinForm">
+          <input type="text" id="joinRoomKey" placeholder="Enter the Key" />
+          <button type="button" id="joinRoomKeyBtn" style="padding: 6px 32px">
+            Join
+          </button>
+        </form>
+        <button type="button" id="createRoomKeyBtn">Create</button>
+      </div>
+    </div>
+    <div class="clip--div hidden">
+      <div>
+        <p>Room Key:</p>
+        <p class="roomKey"></p>
+      </div>
+    </div>
   </body>
   <script>
     function logout() {

@@ -45,11 +45,40 @@ async function signUpUsername() {
     "signup--confirmPassword"
   ).value;
 
+  if (username === "") {
+    notification("red", "Username cannot be empty!!!");
+    return;
+  }
+  if (password === "") {
+    notification("red", "Password cannot be empty!!!");
+    return;
+  }
+
   if (password !== confirmPassword) {
     notification("red", "Passwords do not match");
     return;
   }
 
+  // Check if the username already exists
+  let usernameExists = false;
+  await new Promise((resolve, reject) => {
+    userCore
+      .createReadStream()
+      .on("data", (data) => {
+        if (data.username === username) {
+          usernameExists = true;
+        }
+      })
+      .on("end", () => resolve())
+      .on("error", (err) => reject(err));
+  });
+
+  if (usernameExists) {
+    notification("red", "Username already exists");
+    return;
+  }
+
+  // Proceed with signing up the user
   const keyPair = crypto.keyPair();
   const publicKey = keyPair.publicKey.toString("hex");
   const hashedPass = bcrypt.hashSync(password, 10);
@@ -62,7 +91,6 @@ async function signUpUsername() {
     timeStamp: Date.now(),
   };
   console.log(userDoc);
-  window.location.href = "index.html";
 
   // Save current user information to localStorage
   localStorage.setItem("currentUser", publicKey);
@@ -86,6 +114,8 @@ async function signUpUsername() {
       }
     });
   });
+
+  window.location.href = "index.html";
 }
 
 async function loginUsername() {
@@ -111,6 +141,8 @@ async function loginUsername() {
     });
 }
 
+// document.querySelector(".top--div").appendChild(".user-info");
+
 // Show User Data After Login in index.html
 if (window.location.pathname.includes("index.html")) {
   const currentUserKey = localStorage.getItem("currentUser");
@@ -121,7 +153,7 @@ if (window.location.pathname.includes("index.html")) {
 
   userCore.createReadStream().on("data", (data) => {
     if (data.publicKey === currentUserKey) {
-      document.body.innerHTML += `
+      document.querySelector(".top--div").innerHTML += `
         <div class="user-info">
           <h1>Welcome, ${data.username}!</h1>
           <p>Your public key: ${data.publicKey}</p>
@@ -147,4 +179,40 @@ function logout() {
   localStorage.removeItem("currentUser");
   localStorage.setItem("isLoggedIn", "false");
   window.location.href = "account.html";
+}
+
+// Create and Join Room where clip history and all are stored.
+
+document
+  .querySelector("#createRoomKeyBtn")
+  .addEventListener("click", createRoom);
+document.querySelector("#roomJoinForm").addEventListener("submit", joinRoom);
+
+async function createRoom() {
+  const topicBuffer = crypto.randomBytes(32);
+  joinSwarm(topicBuffer);
+}
+
+async function joinRoom(e) {
+  e.preventDefault();
+  const topicStr = document.querySelector("#joinRoomKey").value;
+  const topicBuffer = b4a.from(topicStr, "hex");
+  joinSwarm(topicBuffer);
+}
+
+async function joinSwarm(topicBuffer) {
+  document.querySelector(".middle--div").classList.add("hidden");
+  document.querySelector(".loading").classList.remove("hidden");
+
+  const discovery = swarm.join(topicBuffer, {
+    client: true,
+    server: true,
+  });
+  await discovery.flushed();
+
+  const topic = b4a.toString(topicBuffer, "hex");
+  document.querySelector(".roomKey").innerText = topic;
+
+  document.querySelector(".loading").classList.add("hidden");
+  document.querySelector(".clip--div").classList.remove("hidden");
 }
