@@ -4,8 +4,53 @@ import b4a from "b4a";
 import Hypercore from "hypercore";
 import bcrypt from "bcryptjs";
 
+import fs from "fs";
+import path from "path";
+
 const swarm = new Hyperswarm();
-const userCore = new Hypercore("./user-core", { valueEncoding: "json" });
+const userCore = new Hypercore("./usercore", { valueEncoding: "json" });
+
+const roomsDir = "./user-rooms";
+
+// Ensure the rooms directory exists
+if (!fs.existsSync(roomsDir)) {
+  fs.mkdirSync(roomsDir);
+}
+
+// Save a new room key for a user
+async function saveRoomKey(publicKey, roomKey, isCreated) {
+  let userFile = path.join(roomsDir, `${publicKey}.json`);
+
+  let userRooms = [];
+  if (fs.existsSync(userFile)) {
+    const data = fs.readFileSync(userFile, "utf8");
+    userRooms = JSON.parse(data);
+  }
+
+  if (!userRooms.includes(roomKey)) {
+    if (isCreated) {
+      userRooms.push(`create-${roomKey}`);
+    } else {
+      userRooms.push(roomKey);
+    }
+    fs.writeFileSync(userFile, JSON.stringify(userRooms, null, 2), "utf8");
+    console.log(`Room key saved for user ${publicKey}: ${roomKey}`);
+  } else {
+    console.log(`Room key already exists for user ${publicKey}`);
+  }
+}
+
+// Retrieve all room keys for a user
+async function getUserRoomKeys(publicKey) {
+  const userFile = path.join(roomsDir, `${publicKey}.json`);
+
+  if (fs.existsSync(userFile)) {
+    const data = fs.readFileSync(userFile, "utf8");
+    return JSON.parse(data);
+  }
+
+  return [];
+}
 
 // Clean up resources before the app shuts down
 function cleanup() {
@@ -26,7 +71,6 @@ function cleanup() {
   });
 }
 
-// Optionally, listen for window unload events to trigger cleanup
 window.addEventListener("beforeunload", cleanup);
 
 // Event Listeners for Sign Up and Login
@@ -45,21 +89,11 @@ async function signUpUsername() {
     "signup--confirmPassword"
   ).value;
 
-  if (username === "") {
-    notification("red", "Username cannot be empty!!!");
-    return;
-  }
-  if (password === "") {
-    notification("red", "Password cannot be empty!!!");
+  if (username === "" || password === "" || password !== confirmPassword) {
+    notification("red", "Invalid signup details!");
     return;
   }
 
-  if (password !== confirmPassword) {
-    notification("red", "Passwords do not match");
-    return;
-  }
-
-  // Check if the username already exists
   let usernameExists = false;
   await new Promise((resolve, reject) => {
     userCore
@@ -69,8 +103,7 @@ async function signUpUsername() {
           usernameExists = true;
         }
       })
-      .on("end", () => resolve())
-      .on("error", (err) => reject(err));
+      .on("end", resolve);
   });
 
   if (usernameExists) {
@@ -78,10 +111,10 @@ async function signUpUsername() {
     return;
   }
 
-  // Proceed with signing up the user
   const keyPair = crypto.keyPair();
   const publicKey = keyPair.publicKey.toString("hex");
   const hashedPass = bcrypt.hashSync(password, 10);
+  getUserRoomKeys();
 
   const userDoc = {
     type: "user",
@@ -92,11 +125,9 @@ async function signUpUsername() {
   };
   console.log(userDoc);
 
-  // Save current user information to localStorage
   localStorage.setItem("currentUser", publicKey);
   localStorage.setItem("isLoggedIn", "true");
 
-  // Append data to userCore
   userCore.append(userDoc, (err) => {
     if (err) {
       console.error("Failed to save user:", err);
@@ -105,7 +136,6 @@ async function signUpUsername() {
       console.log("User signed up successfully:", userDoc);
     }
 
-    // Close userCore after appending data
     userCore.close((err) => {
       if (err) {
         console.error("Error closing Hypercore:", err);
@@ -141,9 +171,6 @@ async function loginUsername() {
     });
 }
 
-// document.querySelector(".top--div").appendChild(".user-info");
-
-// Show User Data After Login in index.html
 if (window.location.pathname.includes("index.html")) {
   const currentUserKey = localStorage.getItem("currentUser");
   if (!currentUserKey) {
@@ -163,7 +190,78 @@ if (window.location.pathname.includes("index.html")) {
   });
 }
 
-// Utility Functions
+document.querySelector("#joinRoomKey").addEventListener("submit", joinRoom);
+document.querySelector("#joinRoomKeyBtn").addEventListener("click", joinRoom);
+document
+  .querySelector("#createRoomKeyBtn")
+  .addEventListener("click", createRoom);
+
+async function createRoom() {
+  const topicBuffer = crypto.randomBytes(32);
+  const roomKey = b4a.toString(topicBuffer, "hex");
+
+  const currentUserKey = localStorage.getItem("currentUser");
+  if (!currentUserKey) {
+    console.error("User not logged in. Cannot create a room.");
+    return;
+  }
+
+  // Save the room key to the user's file
+  await saveRoomKey(currentUserKey, roomKey, true);
+
+  joinSwarm(topicBuffer);
+}
+
+// Join a room
+async function joinRoom(e) {
+  e.preventDefault();
+
+  const topicStr = document.querySelector("#joinRoomKey").value;
+  const topicBuffer = b4a.from(topicStr, "hex");
+  const roomKey = `join-${topicStr}`; // Prefix for joined rooms
+
+  const currentUserKey = localStorage.getItem("currentUser");
+  if (!currentUserKey) {
+    console.error("User not logged in. Cannot join a room.");
+    return;
+  }
+
+  // Fetch or create the user's room file
+  const userFile = path.join(roomsDir, `${currentUserKey}.json`);
+
+  let userRooms = [];
+  if (fs.existsSync(userFile)) {
+    const data = fs.readFileSync(userFile, "utf8");
+    userRooms = JSON.parse(data);
+  }
+
+  // Check if the room key already exists
+  if (!userRooms.includes(roomKey)) {
+    userRooms.push(roomKey);
+    fs.writeFileSync(userFile, JSON.stringify(userRooms, null, 2), "utf8");
+    console.log(`Room key added to ${currentUserKey}: ${roomKey}`);
+  } else {
+    console.log(`Room key already exists for user ${currentUserKey}`);
+  }
+
+  // Join the swarm with the room key
+  joinSwarm(topicBuffer);
+}
+
+async function joinSwarm(topicBuffer) {
+  document.querySelector(".middle--div").classList.add("hidden");
+  document.querySelector(".loading").classList.remove("hidden");
+
+  const discovery = swarm.join(topicBuffer, { client: true, server: true });
+  await discovery.flushed();
+
+  const topic = b4a.toString(topicBuffer, "hex");
+  document.querySelector(".roomKey").innerText = topic;
+
+  document.querySelector(".loading").classList.add("hidden");
+  document.querySelector(".clip--div").classList.remove("hidden");
+}
+
 function notification(color, message) {
   const notification = document.createElement("div");
   notification.className = `notification ${color}`;
@@ -181,38 +279,62 @@ function logout() {
   window.location.href = "account.html";
 }
 
-// Create and Join Room where clip history and all are stored.
+async function displayUserHistory() {
+  const currentUserKey = localStorage.getItem("currentUser");
+  if (!currentUserKey) {
+    console.error("User not logged in. Cannot display user history.");
+    return;
+  }
 
-document
-  .querySelector("#createRoomKeyBtn")
-  .addEventListener("click", createRoom);
-document.querySelector("#roomJoinForm").addEventListener("submit", joinRoom);
+  const userFile = path.join(roomsDir, `${currentUserKey}.json`);
+  if (!fs.existsSync(userFile)) {
+    console.log("No rooms found for user:", currentUserKey);
+    return;
+  }
 
-async function createRoom() {
-  const topicBuffer = crypto.randomBytes(32);
-  joinSwarm(topicBuffer);
-}
+  const roomKeys = JSON.parse(fs.readFileSync(userFile, "utf8"));
 
-async function joinRoom(e) {
-  e.preventDefault();
-  const topicStr = document.querySelector("#joinRoomKey").value;
-  const topicBuffer = b4a.from(topicStr, "hex");
-  joinSwarm(topicBuffer);
-}
+  const createdRoomsList = document.querySelector(".createdRooms");
+  const joinedRoomsList = document.querySelector(".joinedRooms");
 
-async function joinSwarm(topicBuffer) {
-  document.querySelector(".middle--div").classList.add("hidden");
-  document.querySelector(".loading").classList.remove("hidden");
+  // Clear existing lists
+  createdRoomsList.innerHTML = "";
+  joinedRoomsList.innerHTML = "";
 
-  const discovery = swarm.join(topicBuffer, {
-    client: true,
-    server: true,
+  // Populate the lists
+  roomKeys.forEach((key) => {
+    const li = document.createElement("li");
+    // Remove the "create-" or "join-" prefix from the key
+    const cleanKey = key.replace(/^create-/, "").replace(/^join-/, "");
+
+    li.textContent = cleanKey; // Set the cleaned key as the list item text
+
+    if (key.startsWith("create-")) {
+      createdRoomsList.appendChild(li);
+    } else if (key.startsWith("join-")) {
+      joinedRoomsList.appendChild(li);
+    }
   });
-  await discovery.flushed();
+}
 
-  const topic = b4a.toString(topicBuffer, "hex");
-  document.querySelector(".roomKey").innerText = topic;
+// Call this function on page load
+if (window.location.pathname.includes("index.html")) {
+  displayUserHistory();
+}
 
-  document.querySelector(".loading").classList.add("hidden");
-  document.querySelector(".clip--div").classList.remove("hidden");
+// Call displayRoomKeys after login or on the dashboard
+if (window.location.pathname.includes("index.html")) {
+  displayRoomKeys();
+}
+
+// Example function to check if a room is created by the user
+function isRoomCreatedByUser(roomKey) {
+  // Logic for determining if a room is created or joined
+  // Placeholder: Customize this logic based on how you're tagging room keys
+  return roomKey.startsWith("create-");
+}
+
+// Call the function to display the user history on page load
+if (window.location.pathname.includes("index.html")) {
+  displayUserHistory();
 }

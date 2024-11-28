@@ -12,7 +12,18 @@
       <button type="button" id="logoutBtn" onclick="logout()">Logout</button>
     </div>
     <div class="middle--div">
-      <div class="roomBox">
+      <button id="join-create-cardBtn">Join</button>
+      <div class="userHistory">
+        <div>
+          <p>Creator of</p>
+          <ul class="createdRooms"></ul>
+        </div>
+        <div>
+          <p>Joined to</p>
+          <ul class="joinedRooms"></ul>
+        </div>
+      </div>
+      <div class="roomBox hidden">
         <form id="roomJoinForm">
           <input type="text" id="joinRoomKey" placeholder="Enter the Key" />
           <button type="button" id="joinRoomKeyBtn" style="padding: 6px 32px">
@@ -23,7 +34,7 @@
       </div>
     </div>
     <div class="clip--div hidden">
-      <div>
+      <div style="display: flex; gap: 3px; font-size: 12px">
         <p>Room Key:</p>
         <p class="roomKey"></p>
       </div>

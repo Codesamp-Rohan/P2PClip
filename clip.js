@@ -5,7 +5,7 @@ import Hypercore from "hypercore";
 import bcrypt from "bcryptjs";
 
 const swarm = new Hyperswarm();
-const userCore = new Hypercore("./user-core", { valueEncoding: "json" });
+const userCore = new Hypercore("./user-rooms", { valueEncoding: "json" });
 
 function cleanup() {
   userCore.close((err) => {
@@ -36,3 +36,10 @@ userCore.createReadStream().on("data", (data) => {
     console.log("No roomKey found in data:", data);
   }
 });
+
+document
+  .querySelector("#join-create-cardBtn")
+  .addEventListener("click", (e) => {
+    e.preventDefault();
+    document.querySelector(".roomBox").classList.toggle("hidden");
+  });
