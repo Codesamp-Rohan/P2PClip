@@ -22,8 +22,8 @@ Make sure you have the following installed:
 1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/yourusername/p2p-clipboard-app.git
-   cd p2p-clipboard-app
+   git clone https://github.com/Codesamp-Rohan/P2PClip.git
+   cd p2pclip
    ```
 
 2. **Install dependencies**:
