@@ -297,27 +297,43 @@ async function displayUserHistory() {
 
   // Populate the lists
   roomKeys.forEach((room) => {
+    const span = document.createElement("span");
     const li = document.createElement("li");
     const p = document.createElement("p");
+    const timeOfKey = document.createElement("p");
+    timeOfKey.className = "timestamp";
     const detailBtn = document.createElement("button");
     detailBtn.textContent = "Detail";
+    detailBtn.className = "detailBtn";
 
     const cleanKey = room.key.replace(/^create-/, "").replace(/^join-/, "");
 
     // Show the key and its timestamp
-    p.textContent = `${cleanKey} (Created at: ${room.timestamp})`;
+    p.textContent = `${cleanKey}`;
     p.classList.add("li-key");
 
+    console.log(room.timestamp);
+
+    timeOfKey.textContent = `${formatTimestampWithCSS(room.timestamp)}`;
+
+    detailBtn.dataset.details = JSON.stringify(room);
+
     if (room.key.startsWith("create-")) {
-      li.appendChild(p);
+      span.appendChild(p);
+      span.appendChild(timeOfKey);
+      li.appendChild(span);
+      li.appendChild(detailBtn);
       createdRoomsList.appendChild(li);
-      li.appendChild(detailBtn);
     } else if (room.key.startsWith("join-")) {
-      li.appendChild(p);
-      joinedRoomsList.appendChild(li);
+      span.appendChild(p);
+      span.appendChild(timeOfKey);
+      li.appendChild(span);
       li.appendChild(detailBtn);
+      joinedRoomsList.appendChild(li);
     }
   });
+
+  attachDetailListeners();
 }
 
 // Call this function on page load
@@ -325,7 +341,57 @@ if (window.location.pathname.includes("index.html")) {
   displayUserHistory();
 }
 
-// Call displayRoomKeys after login or on the dashboard
-if (window.location.pathname.includes("index.html")) {
-  displayRoomKeys();
+// Each Key PopUp from Create or Join History per User
+function showPopUpPerKey(details) {
+  const popUp = document.querySelector(".eachKeyDetailBox");
+
+  const key = details.key.replace(/^create-/, "").replace(/^join-/, "");
+
+  popUp.innerHTML = `
+        <span style="display: flex; align-items: center; gap: 15px;">
+          <p class="eachKeyDetailBoxKey">${key}</p>
+          <button type="button" class="copyBtn">Copy</button>
+        </span>
+        <span style="display: flex; align-items: center; gap: 5px;">
+          <p>Time:</p>
+          <p class="keyTime">${details.timestamp}</p>
+        </span>
+        `;
+
+  popUp.classList.remove("hidden");
+}
+
+function hidePopupPerKey() {
+  const popUp = document.querySelector(".eachKeyDetailBox");
+  popUp.classList.add("hidden");
+}
+
+document
+  .getElementById("eachKeyDetailBoxCloseBtn")
+  .addEventListener("click", hidePopupPerKey);
+
+function attachDetailListeners() {
+  const detailBtns = document.querySelectorAll(".detailBtn");
+  detailBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const roomDetails = JSON.parse(e.target.dataset.details);
+      showPopUpPerKey(roomDetails);
+    });
+  });
+}
+
+// Convert the time
+function formatTimestampWithCSS(timestamp) {
+  const date = new Date(timestamp);
+  const options = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  };
+  const formattedDate = date.toLocaleString("en-US", options);
+  return formattedDate;
 }

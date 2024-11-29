@@ -167,6 +167,7 @@ li {
   padding: 10px 8px;
   display: flex;
   align-items: center;
+  flex-direction: row;
   justify-content: space-between;
 }
 .backShadow {
@@ -180,7 +181,6 @@ li {
   z-index: 100;
 }
 .li-key {
-  white-space: nowrap;
   width: 380px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -196,4 +196,19 @@ li button:focus {
 }
 li button:hover {
   background-color: #3a414a;
+}
+.eachKeyDetailBox {
+  position: fixed;
+  z-index: 105;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1rem;
+  background-color: #373c48;
+  border: 0.5px solid #666;
+  border-radius: 10px;
+}
+.timestamp {
+  font-size: 10px;
+  color: #a1a6b3;
 }
