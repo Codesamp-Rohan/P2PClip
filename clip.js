@@ -36,10 +36,3 @@ userCore.createReadStream().on("data", (data) => {
     console.log("No roomKey found in data:", data);
   }
 });
-
-document
-  .querySelector("#join-create-cardBtn")
-  .addEventListener("click", (e) => {
-    e.preventDefault();
-    document.querySelector(".roomBox").classList.toggle("hidden");
-  });

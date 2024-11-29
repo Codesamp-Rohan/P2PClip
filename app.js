@@ -17,36 +17,47 @@ if (!fs.existsSync(roomsDir)) {
   fs.mkdirSync(roomsDir);
 }
 
-// Save a new room key for a user
+// Save a new room key for a user with a timestamp
 async function saveRoomKey(publicKey, roomKey, isCreated) {
-  let userFile = path.join(roomsDir, `${publicKey}.json`);
-
+  const userFile = path.join(roomsDir, `${publicKey}.json`);
   let userRooms = [];
+
+  // Read existing user room data
   if (fs.existsSync(userFile)) {
     const data = fs.readFileSync(userFile, "utf8");
     userRooms = JSON.parse(data);
   }
 
-  if (!userRooms.includes(roomKey)) {
-    if (isCreated) {
-      userRooms.push(`create-${roomKey}`);
-    } else {
-      userRooms.push(roomKey);
-    }
+  // Check if the room key already exists
+  const keyExists = userRooms.some(
+    (room) =>
+      typeof room === "object" &&
+      room.key === (isCreated ? `create-${roomKey}` : `join-${roomKey}`)
+  );
+
+  if (!keyExists) {
+    const roomData = {
+      key: isCreated ? `create-${roomKey}` : `join-${roomKey}`,
+      timestamp: new Date().toISOString(), // Add timestamp for both types
+    };
+
+    userRooms.push(roomData);
+
+    // Write the updated data back to the file
     fs.writeFileSync(userFile, JSON.stringify(userRooms, null, 2), "utf8");
-    console.log(`Room key saved for user ${publicKey}: ${roomKey}`);
+    console.log(`Room key saved for user ${publicKey}:`, roomData);
   } else {
     console.log(`Room key already exists for user ${publicKey}`);
   }
 }
 
-// Retrieve all room keys for a user
+// Retrieve all room keys with timestamps for a user
 async function getUserRoomKeys(publicKey) {
   const userFile = path.join(roomsDir, `${publicKey}.json`);
 
   if (fs.existsSync(userFile)) {
     const data = fs.readFileSync(userFile, "utf8");
-    return JSON.parse(data);
+    return JSON.parse(data); // Returns the array of room objects
   }
 
   return [];
@@ -216,9 +227,8 @@ async function createRoom() {
 async function joinRoom(e) {
   e.preventDefault();
 
-  const topicStr = document.querySelector("#joinRoomKey").value;
-  const topicBuffer = b4a.from(topicStr, "hex");
-  const roomKey = `join-${topicStr}`; // Prefix for joined rooms
+  const roomKey = document.querySelector("#joinRoomKey").value;
+  const topicBuffer = b4a.from(roomKey, "hex");
 
   const currentUserKey = localStorage.getItem("currentUser");
   if (!currentUserKey) {
@@ -226,23 +236,7 @@ async function joinRoom(e) {
     return;
   }
 
-  // Fetch or create the user's room file
-  const userFile = path.join(roomsDir, `${currentUserKey}.json`);
-
-  let userRooms = [];
-  if (fs.existsSync(userFile)) {
-    const data = fs.readFileSync(userFile, "utf8");
-    userRooms = JSON.parse(data);
-  }
-
-  // Check if the room key already exists
-  if (!userRooms.includes(roomKey)) {
-    userRooms.push(roomKey);
-    fs.writeFileSync(userFile, JSON.stringify(userRooms, null, 2), "utf8");
-    console.log(`Room key added to ${currentUserKey}: ${roomKey}`);
-  } else {
-    console.log(`Room key already exists for user ${currentUserKey}`);
-  }
+  await saveRoomKey(currentUserKey, roomKey, false);
 
   // Join the swarm with the room key
   joinSwarm(topicBuffer);
@@ -302,17 +296,26 @@ async function displayUserHistory() {
   joinedRoomsList.innerHTML = "";
 
   // Populate the lists
-  roomKeys.forEach((key) => {
+  roomKeys.forEach((room) => {
     const li = document.createElement("li");
-    // Remove the "create-" or "join-" prefix from the key
-    const cleanKey = key.replace(/^create-/, "").replace(/^join-/, "");
+    const p = document.createElement("p");
+    const detailBtn = document.createElement("button");
+    detailBtn.textContent = "Detail";
 
-    li.textContent = cleanKey; // Set the cleaned key as the list item text
+    const cleanKey = room.key.replace(/^create-/, "").replace(/^join-/, "");
 
-    if (key.startsWith("create-")) {
+    // Show the key and its timestamp
+    p.textContent = `${cleanKey} (Created at: ${room.timestamp})`;
+    p.classList.add("li-key");
+
+    if (room.key.startsWith("create-")) {
+      li.appendChild(p);
       createdRoomsList.appendChild(li);
-    } else if (key.startsWith("join-")) {
+      li.appendChild(detailBtn);
+    } else if (room.key.startsWith("join-")) {
+      li.appendChild(p);
       joinedRoomsList.appendChild(li);
+      li.appendChild(detailBtn);
     }
   });
 }
@@ -325,16 +328,4 @@ if (window.location.pathname.includes("index.html")) {
 // Call displayRoomKeys after login or on the dashboard
 if (window.location.pathname.includes("index.html")) {
   displayRoomKeys();
-}
-
-// Example function to check if a room is created by the user
-function isRoomCreatedByUser(roomKey) {
-  // Logic for determining if a room is created or joined
-  // Placeholder: Customize this logic based on how you're tagging room keys
-  return roomKey.startsWith("create-");
-}
-
-// Call the function to display the user history on page load
-if (window.location.pathname.includes("index.html")) {
-  displayUserHistory();
 }

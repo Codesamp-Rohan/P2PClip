@@ -8,18 +8,23 @@
   <body>
     <div id="bar"><pear-ctrl></pear-ctrl></div>
     <div class="loading hidden">Loading...</div>
+    <div class="backShadow hidden"></div>
     <div class="top--div">
-      <button type="button" id="logoutBtn" onclick="logout()">Logout</button>
+      <span style="display: flex; align-items: center; gap: 10px">
+        <button id="join-create-cardBtn">Join</button>
+        <button type="button" id="logoutBtn" onclick="logout()">Logout</button>
+      </span>
     </div>
     <div class="middle--div">
-      <button id="join-create-cardBtn">Join</button>
       <div class="userHistory">
-        <div>
-          <p>Creator of</p>
-          <ul class="createdRooms"></ul>
+        <div style="width: 48%">
+          <p style="padding: 4px 8px">Creator of</p>
+          <ul
+            class="createdRooms"
+            style="display: flex; flex-direction: column; gap: 5px"></ul>
         </div>
-        <div>
-          <p>Joined to</p>
+        <div style="width: 48%">
+          <p style="padding: 4px 8px">Joined to</p>
           <ul class="joinedRooms"></ul>
         </div>
       </div>
@@ -41,6 +46,24 @@
     </div>
   </body>
   <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const roomBox = document.querySelector(".roomBox");
+      const backShadow = document.querySelector(".backShadow");
+
+      document.addEventListener("click", (e) => {
+        if (e.target.matches("#join-create-cardBtn")) {
+          if (roomBox) {
+            roomBox.classList.toggle("hidden");
+            backShadow.classList.toggle("hidden");
+          }
+        }
+      });
+
+      backShadow.addEventListener("click", () => {
+        backShadow.classList.add("hidden");
+        roomBox.classList.add("hidden");
+      });
+    });
     function logout() {
       window.location.href = "account.html";
     }
