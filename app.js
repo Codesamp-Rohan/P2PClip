@@ -352,13 +352,28 @@ function showPopUpPerKey(details) {
           <p class="eachKeyDetailBoxKey">${key}</p>
           <button type="button" class="copyBtn">Copy</button>
         </span>
-        <span style="display: flex; align-items: center; gap: 5px;">
+        <span style="display: flex; align-items: center; gap: 5px;font-size: 11px;
+                     color: #bbb;">
           <p>Time:</p>
-          <p class="keyTime">${details.timestamp}</p>
+          <p class="keyTime">${formatTimestampWithCSS(details.timestamp)}</p>
         </span>
         `;
 
   popUp.classList.remove("hidden");
+
+  const copyBtn = popUp.querySelector(".copyBtn");
+  copyBtn.addEventListener("click", () => {
+    const keyText = popUp.querySelector(".eachKeyDetailBoxKey").textContent;
+
+    navigator.clipboard
+      .writeText(keyText)
+      .then(() => {
+        alert(`Copied: ${keyText}`);
+      })
+      .catch((err) => {
+        console.error("Failed to copy text: ", err);
+      });
+  });
 }
 
 function hidePopupPerKey() {
@@ -375,6 +390,7 @@ function attachDetailListeners() {
   detailBtns.forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
+      document.querySelector(".backShadow").classList.remove("hidden");
       const roomDetails = JSON.parse(e.target.dataset.details);
       showPopUpPerKey(roomDetails);
     });

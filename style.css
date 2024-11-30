@@ -207,8 +207,45 @@ li button:hover {
   background-color: #373c48;
   border: 0.5px solid #666;
   border-radius: 10px;
+  font-size: 14px;
 }
 .timestamp {
   font-size: 10px;
   color: #a1a6b3;
+}
+.blob1 {
+  z-index: -1;
+  background: #0f2027;
+  background: -webkit-linear-gradient(to right, #2c5364, #203a43, #0f2027);
+  background: linear-gradient(to right, #2c5364, #203a43, #0f2027);
+  width: 500px;
+  height: 200px;
+  position: fixed;
+  bottom: -10%;
+  right: 0;
+  filter: blur(100px);
+}
+.createdRooms,
+.joinedRooms {
+  height: 50%;
+  overflow-y: scroll;
+  padding-bottom: 30px;
+}
+.createdRooms::-webkit-scrollbar,
+.joinedRooms::-webkit-scrollbar {
+  width: 5px;
+}
+.createdRooms::-webkit-scrollbar-track,
+.joinedRooms::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px #203a43;
+  border-radius: 10px;
+}
+.createdRooms::-webkit-scrollbar-thumb,
+.joinedRooms::-webkit-scrollbar-thumb {
+  background: #575f71;
+  border-radius: 10px;
+}
+.createdRooms::-webkit-scrollbar-thumb:hover,
+.joinedRooms::-webkit-scrollbar-thumb:hover {
+  background: #7a859f;
 }

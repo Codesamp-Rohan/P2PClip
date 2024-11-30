@@ -7,6 +7,8 @@
   </head>
   <body>
     <div id="bar"><pear-ctrl></pear-ctrl></div>
+    <div class="blob1"></div>
+    <div class="blob2"></div>
     <div class="loading hidden">Loading...</div>
     <div class="backShadow hidden"></div>
     <div class="top--div">
@@ -17,15 +19,27 @@
     </div>
     <div class="middle--div">
       <div class="userHistory">
-        <div style="width: 48%">
+        <div style="width: 48%; height: 94%">
           <p style="padding: 4px 8px">Creator of</p>
           <ul
             class="createdRooms"
-            style="display: flex; flex-direction: column; gap: 5px"></ul>
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 5px;
+              padding-right: 10px;
+            "></ul>
         </div>
-        <div style="width: 48%">
+        <div style="width: 48%; height: 94%">
           <p style="padding: 4px 8px">Joined to</p>
-          <ul class="joinedRooms"></ul>
+          <ul
+            class="joinedRooms"
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 5px;
+              padding-right: 10px;
+            "></ul>
         </div>
       </div>
 
@@ -56,6 +70,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       const roomBox = document.querySelector(".roomBox");
       const backShadow = document.querySelector(".backShadow");
+      const keyPopUp = document.querySelector(".eachKeyDetailBox");
 
       document.addEventListener("click", (e) => {
         if (e.target.matches("#join-create-cardBtn")) {
@@ -69,6 +84,7 @@
       backShadow.addEventListener("click", () => {
         backShadow.classList.add("hidden");
         roomBox.classList.add("hidden");
+        keyPopUp.classList.add("hidden");
       });
     });
     function logout() {
