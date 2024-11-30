@@ -12,6 +12,8 @@ const userCore = new Hypercore("./usercore", { valueEncoding: "json" });
 
 const roomsDir = "./user-rooms";
 
+const __dirname = "./roomKey-msg";
+
 // Ensure the rooms directory exists
 if (!fs.existsSync(roomsDir)) {
   fs.mkdirSync(roomsDir);
@@ -48,6 +50,27 @@ async function saveRoomKey(publicKey, roomKey, isCreated) {
     console.log(`Room key saved for user ${publicKey}:`, roomData);
   } else {
     console.log(`Room key already exists for user ${publicKey}`);
+  }
+}
+
+function createRoomFolder(roomKey) {
+  const roomDir = path.join(__dirname, `user-rooms-${roomKey}`);
+
+  // Check if the folder already exists
+  if (!fs.existsSync(roomDir)) {
+    fs.mkdirSync(roomDir, { recursive: true });
+  }
+
+  // Create a file for messages
+  const messagesFile = path.join(roomDir, "messages.json");
+  if (!fs.existsSync(messagesFile)) {
+    fs.writeFileSync(messagesFile, JSON.stringify([])); // Initialize an empty array for messages
+  }
+
+  // Create an oplog file (optional for operation logs)
+  const oplogFile = path.join(roomDir, "oplog.json");
+  if (!fs.existsSync(oplogFile)) {
+    fs.writeFileSync(oplogFile, JSON.stringify([])); // Initialize an empty log
   }
 }
 
@@ -220,7 +243,17 @@ async function createRoom() {
   // Save the room key to the user's file
   await saveRoomKey(currentUserKey, roomKey, true);
 
+  createRoomFolder(roomKey);
+
   joinSwarm(topicBuffer);
+
+  // Initialize an empty messages array when a new room is created
+  const messagesFilePath = path.join(
+    __dirname,
+    `user-rooms-${roomKey}`,
+    "messages.json"
+  );
+  fs.writeFileSync(messagesFilePath, JSON.stringify([]), "utf8"); // Initialize the message file
 }
 
 // Join a room
@@ -242,6 +275,29 @@ async function joinRoom(e) {
   joinSwarm(topicBuffer);
 }
 
+async function loadMessages(roomKey) {
+  const roomDir = path.join(__dirname, `user-rooms-${roomKey}`);
+  const messagesFile = path.join(roomDir, "messages.json");
+
+  if (!fs.existsSync(messagesFile)) {
+    console.log("No messages found in this room.");
+    return;
+  }
+
+  const messages = JSON.parse(fs.readFileSync(messagesFile, "utf8"));
+  const messageList = document.querySelector(".messagesList");
+
+  // Clear the current message list before reloading
+  messageList.innerHTML = "";
+
+  // Display all the messages
+  messages.forEach((message) => {
+    const messageElement = document.createElement("li");
+    messageElement.textContent = `${message.username}: ${message.content}`;
+    messageList.appendChild(messageElement);
+  });
+}
+
 async function joinSwarm(topicBuffer) {
   document.querySelector(".middle--div").classList.add("hidden");
   document.querySelector(".loading").classList.remove("hidden");
@@ -251,6 +307,8 @@ async function joinSwarm(topicBuffer) {
 
   const topic = b4a.toString(topicBuffer, "hex");
   document.querySelector(".roomKey").innerText = topic;
+
+  await loadMessages(topic);
 
   document.querySelector(".loading").classList.add("hidden");
   document.querySelector(".clip--div").classList.remove("hidden");
@@ -410,4 +468,73 @@ function formatTimestampWithCSS(timestamp) {
   };
   const formattedDate = date.toLocaleString("en-US", options);
   return formattedDate;
+}
+
+// Function to store the message
+async function storeMessage(roomKey, username, messageContent) {
+  const roomDir = path.join(__dirname, `user-rooms-${roomKey}`);
+  const messagesFile = path.join(roomDir, "messages.json");
+
+  // Read the current messages
+  let messages = [];
+  if (fs.existsSync(messagesFile)) {
+    const data = fs.readFileSync(messagesFile, "utf8");
+    messages = JSON.parse(data);
+  }
+
+  // Prepare the new message object
+  const newMessage = {
+    username: username,
+    content: messageContent,
+    timestamp: new Date().toISOString(),
+  };
+
+  // Append the new message to the messages array
+  messages.push(newMessage);
+
+  // Save the updated messages array back to the file
+  fs.writeFileSync(messagesFile, JSON.stringify(messages, null, 2), "utf8");
+  console.log("Message stored:", newMessage);
+}
+
+// Function to read all the messages
+function getMessages(roomKey) {
+  const roomDir = path.join(__dirname, `user-rooms-${roomKey}`);
+  const messagesFile = path.join(roomDir, "messages.json");
+
+  // Read and return the messages
+  const messages = JSON.parse(fs.readFileSync(messagesFile));
+  return messages;
+}
+
+document
+  .querySelector("#sendMessageBtn")
+  .addEventListener("click", sendMessage);
+
+async function sendMessage() {
+  const messageContent = document.querySelector("#messageInput").value;
+  const roomKey = document.querySelector(".roomKey").innerText;
+  const username = localStorage.getItem("currentUser");
+
+  if (!messageContent.trim()) {
+    console.log("Message cannot be empty.");
+    return;
+  }
+
+  if (!roomKey) {
+    console.error("No room selected.");
+    return;
+  }
+
+  // Store the message in the current room
+  await storeMessage(roomKey, username, messageContent);
+
+  // Update the UI to show the new message (you may want to append this to a message list)
+  const messageList = document.querySelector(".messagesList");
+  const newMessageElement = document.createElement("li");
+  newMessageElement.textContent = `${username}: ${messageContent}`;
+  messageList.appendChild(newMessageElement);
+
+  // Clear the message input
+  document.querySelector("#messageInput").value = "";
 }

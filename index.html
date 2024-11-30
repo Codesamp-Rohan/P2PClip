@@ -64,6 +64,27 @@
         <p>Room Key:</p>
         <p class="roomKey"></p>
       </div>
+      <div class="messages">
+        <ul class="messagesList"></ul>
+        <div class="messageInputBox">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type a message"
+            style="width: 100%" />
+          <button id="sendMessageBtn" style="padding-inline: 2rem">Send</button>
+        </div>
+      </div>
+
+      <!-- <button type="button" class="shareClip--button">Share Clip</button>
+      <form class="shareClipForm hidden">
+        <input
+          type="text"
+          name="clipInput"
+          id="clipInput"
+          placeholder="Enter the message here." />
+        <button type="button">Send</button>
+      </form> -->
     </div>
   </body>
   <script>
@@ -72,6 +93,9 @@
       const backShadow = document.querySelector(".backShadow");
       const keyPopUp = document.querySelector(".eachKeyDetailBox");
 
+      const shareClipBtn = document.querySelector(".shareClip--button");
+      const shareClipPopUp = document.querySelector(".shareClipForm");
+
       document.addEventListener("click", (e) => {
         if (e.target.matches("#join-create-cardBtn")) {
           if (roomBox) {
@@ -79,6 +103,11 @@
             backShadow.classList.toggle("hidden");
           }
         }
+      });
+
+      shareClipBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        shareClipPopUp.classList.toggle("hidden");
       });
 
       backShadow.addEventListener("click", () => {

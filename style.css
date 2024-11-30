@@ -123,6 +123,7 @@ input {
   height: 100%;
 }
 .userHistory {
+  height: 100%;
   display: flex;
   padding: 2rem 0;
   justify-content: space-between;
@@ -171,6 +172,7 @@ li {
   justify-content: space-between;
 }
 .backShadow {
+  display: none;
   width: 100vw;
   height: 100vh;
   background-color: #24283195;
@@ -227,7 +229,7 @@ li button:hover {
 }
 .createdRooms,
 .joinedRooms {
-  height: 50%;
+  height: 100%;
   overflow-y: scroll;
   padding-bottom: 30px;
 }
@@ -248,4 +250,45 @@ li button:hover {
 .createdRooms::-webkit-scrollbar-thumb:hover,
 .joinedRooms::-webkit-scrollbar-thumb:hover {
   background: #7a859f;
+}
+.shareClipForm {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #2c5364;
+  padding: 10px;
+  border-radius: 10px;
+  border: 0.5px solid #666;
+}
+.shareClip--button {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+}
+.messages {
+  height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: 3rem;
+  overflow: hidden;
+}
+.messagesList {
+  height: 100%;
+  overflow-y: scroll;
+}
+.messageInputBox {
+  display: flex;
+  flex-direction: row;
+  width: 50%;
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1rem;
+  background: #2c5364;
+  border-radius: 10px;
+  border: 0.5px solid #666;
+  gap: 5px;
 }
