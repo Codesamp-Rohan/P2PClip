@@ -293,9 +293,35 @@ async function loadMessages(roomKey) {
   // Display all the messages
   messages.forEach((message) => {
     const messageElement = document.createElement("li");
-    messageElement.textContent = `${message.username}: ${message.content}`;
+    const messageText = document.createElement("span");
+    messageText.textContent = `${message.username}: ${message.content}`;
+
+    const copyButton = document.createElement("button");
+    copyButton.textContent = "Copy";
+    copyButton.classList.add("copyButton");
+
+    // Add event listener to the copy button
+    copyButton.addEventListener("click", () => {
+      copyToClipboard(`${message.content}`);
+    });
+
+    // Append message text and copy button to the message element
+    messageElement.appendChild(messageText);
+    messageElement.appendChild(copyButton);
     messageList.appendChild(messageElement);
   });
+}
+
+// Function to copy the text to the clipboard
+function copyToClipboard(text) {
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = text;
+  document.body.appendChild(tempTextArea);
+  tempTextArea.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempTextArea);
+
+  notification("green", "Message copied to clipboard!");
 }
 
 async function joinSwarm(topicBuffer) {
@@ -532,9 +558,84 @@ async function sendMessage() {
   // Update the UI to show the new message (you may want to append this to a message list)
   const messageList = document.querySelector(".messagesList");
   const newMessageElement = document.createElement("li");
-  newMessageElement.textContent = `${username}: ${messageContent}`;
+  // Create message text
+  const messageText = document.createElement("span");
+  messageText.textContent = `${username}: ${messageContent}`;
+
+  // Create the copy button
+  const copyButton = document.createElement("button");
+  copyButton.textContent = "Copy";
+  copyButton.classList.add("copyButton");
+
+  // Add event listener to copy button
+  copyButton.addEventListener("click", () => {
+    copyToClipboard(`${messageContent}`);
+  });
+
+  // Append the message text and copy button to the message element
+  newMessageElement.appendChild(messageText);
+  newMessageElement.appendChild(copyButton);
   messageList.appendChild(newMessageElement);
 
-  // Clear the message input
-  document.querySelector("#messageInput").value = "";
+  // Optionally, scroll to the bottom of the message list
+  messageList.scrollTop = messageList.scrollHeight;
+
+  // Clear the message input field
+  const messageInput = document.querySelector("#messageInput");
+  messageInput.value = "";
+
+  // Notify user that the message has been sent
+  notification("green", "Message sent!");
+}
+
+// Function to display a message with a copy button
+function displayMessage(message) {
+  // Create a list item for the message
+  const messageItem = document.createElement("li");
+  messageItem.classList.add("message-item");
+
+  // Create the text element for the message content
+  const messageText = document.createElement("span");
+  messageText.classList.add("message-text");
+  messageText.textContent = `${message.username}: ${message.content}`;
+
+  // Create the copy button
+  const copyButton = document.createElement("button");
+  copyButton.textContent = "Copy";
+  copyButton.classList.add("copy-btn");
+
+  // Add event listener to the copy button
+  copyButton.addEventListener("click", () => {
+    copyMessageToClipboard(message.content);
+  });
+
+  // Append the message text and copy button to the list item
+  messageItem.appendChild(messageText);
+  messageItem.appendChild(copyButton);
+
+  // Append the message item to the message list
+  document.getElementById("messageList").appendChild(messageItem);
+}
+
+// Function to copy the message content to the clipboard
+function copyMessageToClipboard(content) {
+  // Create a temporary text area to hold the message content
+  const textArea = document.createElement("textarea");
+  textArea.value = content;
+
+  // Append the text area to the body (it's hidden by default)
+  document.body.appendChild(textArea);
+
+  // Select the text in the textarea
+  textArea.select();
+  textArea.setSelectionRange(0, 99999); // For mobile devices
+
+  // Execute the copy command
+  document.execCommand("copy");
+
+  // Remove the temporary textarea from the DOM
+  document.body.removeChild(textArea);
+
+  // Provide feedback (optional)
+  alert("Message copied to clipboard!");
 }
